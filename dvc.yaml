@@ -4,7 +4,6 @@ stages:
     deps:
       - src/data_ingest.py
       - params.yaml
-    outs:
       - data/raw
 
   preprocess:
