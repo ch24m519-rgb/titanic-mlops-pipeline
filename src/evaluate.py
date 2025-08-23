@@ -23,6 +23,6 @@ if __name__ == "__main__":
     preds = model.transform(test)
     evaluator = BinaryClassificationEvaluator(labelCol=target, rawPredictionCol="rawPrediction", metricName="areaUnderROC")
     auc = evaluator.evaluate(preds)
-    save_json({"auc": auc}, "models/metrics.json")
+    save_json({"auc": auc}, "metrics/metrics.json")
     spark.stop()
 

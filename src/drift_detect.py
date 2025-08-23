@@ -36,6 +36,6 @@ if __name__ == "__main__":
 
     val = psi(base, new)
     out = {"method": p["drift"]["method"], "psi": float(val), "threshold": p["drift"]["psi_threshold"], "drift": bool(val > p["drift"]["psi_threshold"])}
-    save_json(out, "models/drift_report.json")
+    save_json(out, "reports/drift_report.json")
     spark.stop()
 
