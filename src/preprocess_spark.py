@@ -1,53 +1,64 @@
 import os
-from utils import read_params
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, when
-from pyspark.ml.feature import StringIndexer, OneHotEncoder, VectorAssembler, Imputer
-from pyspark.ml import Pipeline
+from pyspark.sql import SparkSession, functions as F
+from pyspark.sql.types import DoubleType
+from pyspark.ml.feature import StringIndexer, VectorAssembler
+from src.utils import read_params
+
+def build_session():
+    return (SparkSession.builder
+            .appName("titanic-preprocess")
+            .master(os.getenv("SPARK_MASTER", "local[*]"))
+            .getOrCreate())
 
 if __name__ == "__main__":
-    params = read_params()
-    spark = (SparkSession.builder
-             .appName("titanic-preprocess")
-             .master(os.getenv("SPARK_MASTER","local[*]"))
-             .getOrCreate())
+    p = read_params()
+    spark = build_session()
 
-    raw_dir = params["data"]["local_raw_dir"]
-    processed_dir = params["data"]["processed_dir"]
-    target = params["data"]["target"]
-    drop_cols = params["preprocess"]["drop_cols"]
+    raw_path = "data/raw/" + p["data"]["raw_csv_name"]
+    df = (spark.read.option("header", True)
+                 .option("inferSchema", True)
+                 .csv(raw_path))
 
-    df = spark.read.csv(f"{raw_dir}/train.csv", header=True, inferSchema=True)
+    # Select commonly available columns
+    cols = ["Survived","Pclass","Sex","Age","SibSp","Parch","Fare","Embarked"]
+    for c in cols:
+        if c not in df.columns:
+            raise ValueError(f"[preprocess] Missing column in CSV: {c}")
 
-    # Minimal cleaning
-    df = df.drop(*[c for c in drop_cols if c in df.columns])
+    # Basic cleaning / imputation
+    df = df.withColumn("Age", df["Age"].cast(DoubleType()))
+    df = df.withColumn("Fare", df["Fare"].cast(DoubleType()))
+    df = df.withColumn("Survived", df["Survived"].cast("double"))
 
-    # Cast target to int
-    df = df.withColumn(target, col(target).cast("int"))
+    # Fill missing numerics with mean
+    for c in ["Age", "Fare"]:
+        mean_val = df.select(F.mean(F.col(c))).first()[0]
+        df = df.fillna({c: float(mean_val) if mean_val is not None else 0.0})
 
-    # Create basic features
-    # e.g., FamilySize = SibSp + Parch + 1
-    if "SibSp" in df.columns and "Parch" in df.columns:
-        df = df.withColumn("FamilySize", col("SibSp") + col("Parch") + 1)
+    # Fill Embarked with most frequent
+    mode_emb = (df.groupBy("Embarked").count()
+                  .orderBy(F.desc("count"))
+                  .first())
+    df = df.fillna({"Embarked": mode_emb["Embarked"] if mode_emb else "S"})
 
-    # Impute numerics
-    numeric_cols = [c for (c,t) in df.dtypes if t in ("int","double") and c != target]
-    imputer = Imputer(strategy="median", inputCols=numeric_cols, outputCols=[f"{c}_imp" for c in numeric_cols])
+    # Index categoricals
+    si_sex = StringIndexer(inputCol="Sex", outputCol="Sex_index", handleInvalid="keep")
+    si_emb = StringIndexer(inputCol="Embarked", outputCol="Embarked_index", handleInvalid="keep")
 
-    # Categorical handling
-    cat_cols = [c for (c,t) in df.dtypes if t == "string"]
-    indexers = [StringIndexer(handleInvalid="keep", inputCol=c, outputCol=f"{c}_idx") for c in cat_cols]
-    encoders = OneHotEncoder(inputCols=[f"{c}_idx" for c in cat_cols], outputCols=[f"{c}_oh" for c in cat_cols])
+    df = si_sex.fit(df).transform(df)
+    df = si_emb.fit(df).transform(df)
 
-    feature_cols = [f"{c}_imp" for c in numeric_cols] + [f"{c}_oh" for c in cat_cols]
-    assembler = VectorAssembler(inputCols=feature_cols, outputCol="features")
+    # Label + features
+    label_col = p["data"]["target"]          # "label"
+    df = df.withColumnRenamed("Survived", label_col)
 
-    pipeline = Pipeline(stages=[imputer] + indexers + [encoders, assembler])
-    model = pipeline.fit(df)
-    out = model.transform(df).select("features", target)
+    feature_cols = ["Pclass", "Age", "SibSp", "Parch", "Fare", "Sex_index", "Embarked_index"]
+    va = VectorAssembler(inputCols=feature_cols, outputCol="features", handleInvalid="keep")
+    df = va.transform(df).select("features", label_col)
 
-    os.makedirs(processed_dir, exist_ok=True)
-    out.write.mode("overwrite").parquet(f"{processed_dir}/train.parquet")
+    # Save single processed dataset
+    processed_path = p["data"]["processed_path"]
+    (df.write.mode("overwrite").parquet(processed_path))
+    print(f"[preprocess] Wrote processed dataset to {processed_path}")
 
     spark.stop()
-

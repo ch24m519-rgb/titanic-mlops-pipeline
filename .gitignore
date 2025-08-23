@@ -1,24 +1,46 @@
+# ---------------------------
+# DVC
+# ---------------------------
+/data/                # versioned by DVC, not Git
+/models/              # versioned by DVC, not Git
+/mlruns/              # MLflow local runs
+/.dvc/tmp/            # DVC temp cache
+
+# Do NOT ignore dvc.yaml or dvc.lock
+!.dvc/
+!.dvcignore
+!dvc.yaml
+!dvc.lock
+
+# ---------------------------
 # Python
+# ---------------------------
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.pkl
+*.egg-info/
+*.egg
+*.log
 
-# DVC
-/data/*
-!data/.gitignore
-/.dvc/
-/dvc.lock
-
-# MLflow artifacts
-mlruns/
-models/
-
-# Env & local
+# ---------------------------
+# Environments
+# ---------------------------
 .env
 .venv/
+.conda/
 *.sqlite
-.derby/
 
-# OS/IDE
+# ---------------------------
+# OS / Editor
+# ---------------------------
 .DS_Store
+Thumbs.db
 .idea/
 .vscode/
+
+# ---------------------------
+# Jupyter
+# ---------------------------
+.ipynb_checkpoints/

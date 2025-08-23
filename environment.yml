@@ -1,0 +1,33 @@
+name: titanic-mlops
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip=25.1.1
+
+  # Core ML / Data
+  - numpy=1.26.4
+  - pandas=2.2.2
+  - scikit-learn=1.4.2
+  - pyspark=3.5.1
+
+  # DVC & storage backends
+  - dvc=3.62.0
+  - dvc-http=2.32.0
+
+  # API framework
+  - fastapi=0.112.0
+  - uvicorn=0.30.3
+
+  # Database connector
+  - psycopg2-binary=2.9.9
+
+  # Utilities
+  - python-dotenv=1.0.1
+  - pyyaml=6.0.2
+  - tqdm=4.67.1
+
+  - pip:
+      # MLflow (latest compatible)
+      - mlflow==2.14.1

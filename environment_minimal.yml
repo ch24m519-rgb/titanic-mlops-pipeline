@@ -1,0 +1,19 @@
+name: titanic-mlops
+channels:
+  - defaults
+dependencies:
+  - uvicorn=0.30.3
+  - pyspark=3.5.1
+  - dvc=3.62.0
+  - tqdm=4.67.1
+  - pyyaml=6.0.2
+  - dvc-http=2.32.0
+  - python-dotenv=1.0.1
+  - psycopg2-binary=2.9.9
+  - pip=25.1.1
+  - pandas=2.2.2
+  - fastapi=0.112.0
+  - python=3.10
+  - numpy=1.26.4
+  - scikit-learn=1.4.2
+prefix: C:\Users\user\anaconda3\envs\titanic-mlops

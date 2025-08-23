@@ -1,5 +1,5 @@
 import json, subprocess
-from utils import read_params
+from src.utils import read_params
 
 if __name__ == "__main__":
     p = read_params()

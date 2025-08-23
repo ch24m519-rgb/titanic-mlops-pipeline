@@ -1,67 +1,54 @@
 stages:
   get_data:
-    cmd: python -m src.data_ingest --params params.yaml
+    cmd: python -m src.get_data --params params.yaml
     deps:
-      - src/data_ingest.py
+      - src/get_data.py
       - params.yaml
-      - data/raw
+    outs:
+      - data/raw/titanic.csv
 
   preprocess:
     cmd: python -m src.preprocess_spark --params params.yaml
     deps:
       - src/preprocess_spark.py
+      - data/raw/titanic.csv
       - params.yaml
-      - data/raw
     outs:
-      - data/processed
+      - data/processed/titanic.parquet
 
   split:
-    cmd: python -m src.split_data --params params.yaml
+    cmd: python -m src.split_spark --params params.yaml
     deps:
-      - src/split_data.py
+      - src/split_spark.py
+      - data/processed/titanic.parquet
       - params.yaml
-      - data/processed
     outs:
-      - data/splits
+      - data/splits/train.parquet
+      - data/splits/test.parquet
 
   train:
     cmd: python -m src.train_spark --params params.yaml
     deps:
       - src/train_spark.py
+      - data/splits/train.parquet
+      - data/splits/test.parquet
       - params.yaml
-      - data/splits
+    params:
+      - train
+      - mlflow
+      - data.target
     outs:
-      - models/
+      - models/spark_model
 
   evaluate:
     cmd: python -m src.evaluate --params params.yaml
     deps:
       - src/evaluate.py
+      - models/spark_model
+      - data/splits/test.parquet
       - params.yaml
-      - data/splits
-      - models
+    params:
+      - train.algorithm
+      - data.target
     metrics:
-      - metrics/metrics.json
-
-  register_best:
-    cmd: python -m src.register_best --params params.yaml
-    deps:
-      - src/register_best.py
-      - params.yaml
-      - metrics/metrics.json
-
-  drift_check:
-    cmd: python -m src.drift_detect --params params.yaml
-    deps:
-      - src/drift_detect.py
-      - params.yaml
-      - data/processed
-    metrics:
-      - reports/drift_report.json
-
-  retrain_if_drift:
-    cmd: python -m src.retrain_entrypoint --params params.yaml
-    deps:
-      - src/retrain_entrypoint.py
-      - params.yaml
-      - reports/drift_report.json
+      - metrics.json

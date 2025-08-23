@@ -1,5 +1,5 @@
 import os
-from utils import read_params
+from src.utils import read_params
 from pyspark.sql import SparkSession
 
 if __name__ == "__main__":

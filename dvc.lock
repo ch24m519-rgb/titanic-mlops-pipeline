@@ -1,0 +1,84 @@
+schema: '2.0'
+stages:
+  get_data:
+    cmd: python -m src.data_ingest --params params.yaml
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 2e92afb04cc1088e96c965b66ea57b1b.dir
+      size: 93081
+      nfiles: 3
+    - path: params.yaml
+      hash: md5
+      md5: 6cf348a3ec91dff98f3eca1d0b83e069
+      size: 800
+    - path: src/data_ingest.py
+      hash: md5
+      md5: 784e564f55f3f241fc082fbea396be60
+      size: 1915
+  preprocess:
+    cmd: python -m src.preprocess_spark --params params.yaml
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 2e92afb04cc1088e96c965b66ea57b1b.dir
+      size: 93081
+      nfiles: 3
+    - path: params.yaml
+      hash: md5
+      md5: 6cf348a3ec91dff98f3eca1d0b83e069
+      size: 800
+    - path: src/preprocess_spark.py
+      hash: md5
+      md5: 4a28f6748cd086faf2918deb7640e5f0
+      size: 2149
+    outs:
+    - path: data/processed
+      hash: md5
+      md5: 7ade8f0a3970dee13c29cfaa8ac9fe3a.dir
+      size: 13055
+      nfiles: 4
+  split:
+    cmd: python -m src.split_data --params params.yaml
+    deps:
+    - path: data/processed
+      hash: md5
+      md5: 7ade8f0a3970dee13c29cfaa8ac9fe3a.dir
+      size: 13055
+      nfiles: 4
+    - path: params.yaml
+      hash: md5
+      md5: 6cf348a3ec91dff98f3eca1d0b83e069
+      size: 800
+    - path: src/split_data.py
+      hash: md5
+      md5: 5131f8a31deafb85d605596f37639e17
+      size: 830
+    outs:
+    - path: data/splits
+      hash: md5
+      md5: 8d2be0dd0bbceaece8fa3e60ab20fbcd.dir
+      size: 13726
+      nfiles: 8
+  train:
+    cmd: python -m src.train_spark --params params.yaml
+    deps:
+    - path: data/splits
+      hash: md5
+      md5: 8d2be0dd0bbceaece8fa3e60ab20fbcd.dir
+      size: 13726
+      nfiles: 8
+    - path: params.yaml
+      hash: md5
+      md5: 6cf348a3ec91dff98f3eca1d0b83e069
+      size: 800
+    - path: src/train_spark.py
+      hash: md5
+      md5: b9d475ec0468dc6ca797464bbcee7efa
+      size: 3426
+    outs:
+    - path: models/
+      hash: md5
+      md5: a3bed7e7f9e36a5ea841afcf15786a06.dir
+      size: 6632
+      nfiles: 16

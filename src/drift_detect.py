@@ -1,6 +1,6 @@
 import json, os
 import numpy as np
-from utils import read_params, save_json
+from src.utils import read_params, save_json
 from pyspark.sql import SparkSession
 
 def psi(expected, actual, bins=10):
