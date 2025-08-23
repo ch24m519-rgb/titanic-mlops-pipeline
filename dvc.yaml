@@ -1,0 +1,68 @@
+stages:
+  get_data:
+    cmd: python -m src.data_ingest --params params.yaml
+    deps:
+      - src/data_ingest.py
+      - params.yaml
+    outs:
+      - data/raw: {}
+
+  preprocess:
+    cmd: python -m src.preprocess_spark --params params.yaml
+    deps:
+      - src/preprocess_spark.py
+      - params.yaml
+      - data/raw
+    outs:
+      - data/processed: {}
+
+  split:
+    cmd: python -m src.split_data --params params.yaml
+    deps:
+      - src/split_data.py
+      - params.yaml
+      - data/processed
+    outs:
+      - data/splits: {}
+
+  train:
+    cmd: python -m src.train_spark --params params.yaml
+    deps:
+      - src/train_spark.py
+      - params.yaml
+      - data/splits
+    outs:
+      - models: {}
+
+  evaluate:
+    cmd: python -m src.evaluate --params params.yaml
+    deps:
+      - src/evaluate.py
+      - params.yaml
+      - data/splits
+      - models
+    outs:
+      - models/metrics.json
+
+  register_best:
+    cmd: python -m src.register_best --params params.yaml
+    deps:
+      - src/register_best.py
+      - params.yaml
+      - models/metrics.json
+
+  drift_check:
+    cmd: python -m src.drift_detect --params params.yaml
+    deps:
+      - src/drift_detect.py
+      - params.yaml
+      - data/processed
+    outs:
+      - models/drift_report.json
+
+  retrain_if_drift:
+    cmd: python -m src.retrain_entrypoint --params params.yaml
+    deps:
+      - src/retrain_entrypoint.py
+      - params.yaml
+      - models/drift_report.json

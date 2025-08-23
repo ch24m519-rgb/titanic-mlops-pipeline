@@ -1,0 +1,36 @@
+data:
+  source: "kaggle"         # "kaggle" or "local"
+  kaggle_competition: "titanic"
+  local_raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  splits_dir: "data/splits"
+  target: "Survived"
+
+preprocess:
+  impute_strategy: "median"
+  one_hot_max_categories: 20
+  drop_cols: ["PassengerId", "Name", "Ticket", "Cabin"]
+
+split:
+  test_size: 0.2
+  random_state: 42
+
+train:
+  algorithm: "logreg"      # "logreg" or "random_forest"
+  max_iter: 200
+  reg_param: 0.0           # L2 for LogisticRegression in Spark (elasticNetParam=0)
+  elastic_net_param: 0.0
+  rf_trees: 200
+  rf_max_depth: 8
+
+mlflow:
+  experiment_name: "titanic-exp"
+  model_name: "titanic_clf"
+  metric_to_maximize: "f1"
+
+drift:
+  method: "psi"
+  psi_threshold: 0.2
+
+retrain:
+  enable: true
