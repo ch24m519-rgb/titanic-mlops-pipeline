@@ -14,7 +14,7 @@ if __name__ == "__main__":
     p = read_params()
     spark = build_session()
 
-    raw_path = "data/raw/" + p["data"]["raw_csv_name"]
+    raw_path = os.path.join(p["data"]["local_raw_dir"], p["data"]["raw_csv_name"])
     df = (spark.read.option("header", True)
                  .option("inferSchema", True)
                  .csv(raw_path))
@@ -49,16 +49,19 @@ if __name__ == "__main__":
     df = si_emb.fit(df).transform(df)
 
     # Label + features
-    label_col = p["data"]["target"]          # "label"
+    label_col = p["data"]["target"]          # "Survived"
     df = df.withColumnRenamed("Survived", label_col)
 
     feature_cols = ["Pclass", "Age", "SibSp", "Parch", "Fare", "Sex_index", "Embarked_index"]
     va = VectorAssembler(inputCols=feature_cols, outputCol="features", handleInvalid="keep")
     df = va.transform(df).select("features", label_col)
 
-    # Save single processed dataset
-    processed_path = p["data"]["processed_path"]
-    (df.write.mode("overwrite").parquet(processed_path))
+    # Save as a single file for DVC compatibility
+    processed_path = os.path.join(p["data"]["processed_dir"], "titanic.parquet")
+    (df.coalesce(1)        # force single output file
+       .write.mode("overwrite")
+       .parquet(processed_path))
+
     print(f"[preprocess] Wrote processed dataset to {processed_path}")
 
     spark.stop()

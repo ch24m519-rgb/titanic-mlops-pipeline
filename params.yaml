@@ -1,7 +1,9 @@
 data:
-  source: "local"         # "kaggle" or "local"
+  source: "local"          
   kaggle_competition: "titanic"
   local_raw_dir: "data/raw"
+  raw_csv_name: "titanic.csv" 
+  test_csv_name: "test.csv"   
   processed_dir: "data/processed"
   splits_dir: "data/splits"
   target: "Survived"
@@ -16,12 +18,12 @@ split:
   random_state: 42
 
 train:
-  algorithm: "logreg"      # "logreg" or "random_forest"
-  max_iter: 200
-  reg_param: 0.0           # L2 for LogisticRegression in Spark (elasticNetParam=0)
-  elastic_net_param: 0.0
-  rf_trees: 200
-  rf_max_depth: 8
+  algorithm: ["logreg","random_forest"]
+  max_iter: [50, 100, 200]
+  reg_param: [0.0, 0.01, 0.1]
+  elastic_net_param: [0.0, 0.5, 1.0]
+  rf_trees: [10, 50, 100]
+  rf_max_depth: [5, 10, 15]
 
 mlflow:
   experiment_name: "titanic-exp-fresh"
@@ -34,3 +36,5 @@ drift:
 
 retrain:
   enable: true
+
+

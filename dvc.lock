@@ -1,84 +1,182 @@
 schema: '2.0'
 stages:
   get_data:
-    cmd: python -m src.data_ingest --params params.yaml
+    cmd: python -m src.get_data --params params.yaml
     deps:
-    - path: data/raw
-      hash: md5
-      md5: 2e92afb04cc1088e96c965b66ea57b1b.dir
-      size: 93081
-      nfiles: 3
     - path: params.yaml
       hash: md5
-      md5: 6cf348a3ec91dff98f3eca1d0b83e069
-      size: 800
-    - path: src/data_ingest.py
+      md5: 8919b2f78af2c3af5d9e2dcd0e7e41d0
+      size: 820
+    - path: src/get_data.py
       hash: md5
-      md5: 784e564f55f3f241fc082fbea396be60
-      size: 1915
+      md5: affa2015e7f03e7912c3682916c87d33
+      size: 1081
+    outs:
+    - path: data/raw/titanic.csv
+      hash: md5
+      md5: 2309cc5f04782ed9bb6016d9f4e381cf
+      size: 61194
   preprocess:
     cmd: python -m src.preprocess_spark --params params.yaml
     deps:
-    - path: data/raw
+    - path: data/raw/titanic.csv
       hash: md5
-      md5: 2e92afb04cc1088e96c965b66ea57b1b.dir
-      size: 93081
-      nfiles: 3
+      md5: 2309cc5f04782ed9bb6016d9f4e381cf
+      size: 61194
     - path: params.yaml
       hash: md5
-      md5: 6cf348a3ec91dff98f3eca1d0b83e069
-      size: 800
+      md5: 8919b2f78af2c3af5d9e2dcd0e7e41d0
+      size: 820
     - path: src/preprocess_spark.py
       hash: md5
-      md5: 4a28f6748cd086faf2918deb7640e5f0
-      size: 2149
+      md5: 062a5f330f5139acbf6fb06635596f65
+      size: 2653
     outs:
     - path: data/processed
       hash: md5
-      md5: 7ade8f0a3970dee13c29cfaa8ac9fe3a.dir
-      size: 13055
+      md5: bf1147a9691acebe1b974a75f6a008c4.dir
+      size: 11400
       nfiles: 4
   split:
-    cmd: python -m src.split_data --params params.yaml
+    cmd: python -m src.split_spark --params params.yaml
     deps:
-    - path: data/processed
+    - path: data/processed/titanic.parquet
       hash: md5
-      md5: 7ade8f0a3970dee13c29cfaa8ac9fe3a.dir
-      size: 13055
+      md5: deea980a7af4a7135db8aef55f578311.dir
+      size: 11400
       nfiles: 4
     - path: params.yaml
       hash: md5
-      md5: 6cf348a3ec91dff98f3eca1d0b83e069
-      size: 800
-    - path: src/split_data.py
+      md5: 8919b2f78af2c3af5d9e2dcd0e7e41d0
+      size: 820
+    - path: src/split_spark.py
       hash: md5
-      md5: 5131f8a31deafb85d605596f37639e17
-      size: 830
+      md5: 1ea6eb7ae4d94247aa1cbb8d521bfc75
+      size: 1320
     outs:
-    - path: data/splits
+    - path: data/splits/test.parquet
       hash: md5
-      md5: 8d2be0dd0bbceaece8fa3e60ab20fbcd.dir
-      size: 13726
-      nfiles: 8
+      md5: b0047d1b1752ae06e3b00b1b111e6f10.dir
+      size: 4698
+      nfiles: 4
+    - path: data/splits/train.parquet
+      hash: md5
+      md5: 6a6253241969420ad7fe756e262f4214.dir
+      size: 9836
+      nfiles: 4
   train:
     cmd: python -m src.train_spark --params params.yaml
     deps:
-    - path: data/splits
+    - path: data/splits/test.parquet
       hash: md5
-      md5: 8d2be0dd0bbceaece8fa3e60ab20fbcd.dir
-      size: 13726
+      md5: b0047d1b1752ae06e3b00b1b111e6f10.dir
+      size: 4698
+      nfiles: 4
+    - path: data/splits/train.parquet
+      hash: md5
+      md5: 6a6253241969420ad7fe756e262f4214.dir
+      size: 9836
+      nfiles: 4
+    - path: params.yaml
+      hash: md5
+      md5: 8919b2f78af2c3af5d9e2dcd0e7e41d0
+      size: 820
+    - path: src/train_spark.py
+      hash: md5
+      md5: 8053cc80bbb909c2a4215eb4eaadc674
+      size: 7352
+    params:
+      params.yaml:
+        data.target: Survived
+        mlflow:
+          experiment_name: titanic-exp-fresh
+          model_name: titanic_clf
+          metric_to_maximize: f1
+        train:
+          algorithm:
+          - logreg
+          - random_forest
+          max_iter:
+          - 50
+          - 100
+          - 200
+          reg_param:
+          - 0.0
+          - 0.01
+          - 0.1
+          elastic_net_param:
+          - 0.0
+          - 0.5
+          - 1.0
+          rf_trees:
+          - 10
+          - 50
+          - 100
+          rf_max_depth:
+          - 5
+          - 10
+          - 15
+    outs:
+    - path: models/spark_model
+      hash: md5
+      md5: 9fe5a29eddd262a7402174948d4e0c88.dir
+      size: 5533
+      nfiles: 8
+  evaluate:
+    cmd: python -m src.evaluate --params params.yaml
+    deps:
+    - path: data/splits/test.parquet
+      hash: md5
+      md5: b0047d1b1752ae06e3b00b1b111e6f10.dir
+      size: 4698
+      nfiles: 4
+    - path: models/spark_model
+      hash: md5
+      md5: 9fe5a29eddd262a7402174948d4e0c88.dir
+      size: 5533
       nfiles: 8
     - path: params.yaml
       hash: md5
-      md5: 6cf348a3ec91dff98f3eca1d0b83e069
-      size: 800
-    - path: src/train_spark.py
+      md5: 8919b2f78af2c3af5d9e2dcd0e7e41d0
+      size: 820
+    - path: src/evaluate.py
       hash: md5
-      md5: b9d475ec0468dc6ca797464bbcee7efa
-      size: 3426
+      md5: 3dee0589b41cd6b9d19e3fd28bc21601
+      size: 4987
+    params:
+      params.yaml:
+        data.target: Survived
+        train.algorithm:
+        - logreg
+        - random_forest
     outs:
-    - path: models/
+    - path: metrics.json
       hash: md5
-      md5: a3bed7e7f9e36a5ea841afcf15786a06.dir
-      size: 6632
-      nfiles: 16
+      md5: dcacbf7f1dd145110bfa4a990779907c
+      size: 99
+  predict:
+    cmd: python -m src.predict --params params.yaml
+    deps:
+    - path: models/spark_model
+      hash: md5
+      md5: 9fe5a29eddd262a7402174948d4e0c88.dir
+      size: 5533
+      nfiles: 8
+    - path: params.yaml
+      hash: md5
+      md5: 8919b2f78af2c3af5d9e2dcd0e7e41d0
+      size: 820
+    - path: src/predict.py
+      hash: md5
+      md5: eadb04020b802c280f8ae6400328063a
+      size: 5058
+    params:
+      params.yaml:
+        train.algorithm:
+        - logreg
+        - random_forest
+    outs:
+    - path: predictions.csv
+      hash: md5
+      md5: 67532c7b3eb3800a5cc47b408d966097
+      size: 3258

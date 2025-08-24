@@ -14,7 +14,7 @@ stages:
       - data/raw/titanic.csv
       - params.yaml
     outs:
-      - data/processed/titanic.parquet
+      - data/processed
 
   split:
     cmd: python -m src.split_spark --params params.yaml
@@ -52,3 +52,14 @@ stages:
       - data.target
     metrics:
       - metrics.json
+ 
+  predict:
+    cmd: python -m src.predict --params params.yaml
+    deps:
+      - src/predict.py
+      - models/spark_model
+      - params.yaml
+    params:
+      - train.algorithm
+    outs:
+      - predictions.csv

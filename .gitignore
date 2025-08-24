@@ -44,3 +44,5 @@ Thumbs.db
 # Jupyter
 # ---------------------------
 .ipynb_checkpoints/
+/metrics.json
+/predictions.csv
